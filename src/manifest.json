@@ -11,7 +11,9 @@
     "96": "icon/96.png",
     "128": "icon/128.png"
   },
-  "{{chrome}}.action": {},
+  "{{chrome}}.action": {
+    "default_popup": "src/popup.html"
+  },
   "{{firefox}}.browser_action": {},
   "background": {
     "{{chrome}}.service_worker": "src/background.js",
