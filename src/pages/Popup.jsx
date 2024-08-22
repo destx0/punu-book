@@ -1,5 +1,3 @@
-// src/pages/Popup.jsx
-
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Edit2, Trash2 } from "lucide-react";
 import {
@@ -7,6 +5,7 @@ import {
 	addQuizToPlaylist,
 	getPlaylistNames,
 	updatePlaylistName,
+	deletePlaylist,
 } from "../firebase/firestore";
 import { scrapeQuestionAndOptions } from "../scraper";
 
@@ -52,10 +51,15 @@ export default function Popup() {
 		}
 	};
 
-	const deletePlaylist = async (id) => {
-		// Implement delete functionality
-		// You might want to add a function in firestore.js to delete a playlist
-		setPlaylists(playlists.filter((playlist) => playlist.id !== id));
+	const handleDeletePlaylist = async (id) => {
+		try {
+			await deletePlaylist(id);
+			setPlaylists(playlists.filter((playlist) => playlist.id !== id));
+			alert("Playlist deleted successfully!");
+		} catch (error) {
+			console.error("Error deleting playlist:", error);
+			alert("Error deleting playlist: " + error.message);
+		}
 	};
 
 	const addScrapedDataToPlaylist = async (playlistId) => {
@@ -88,7 +92,7 @@ export default function Popup() {
 
 	return (
 		<div className="p-4 min-w-[300px]">
-			<h1 className="text-2xl font-bold mb-4">Playlist Manager</h1>
+			<h1 className="text-2xl font-bold mb-4">Punu Book</h1>
 			<div className="flex mb-4">
 				<input
 					type="text"
@@ -131,7 +135,7 @@ export default function Popup() {
 							<Edit2 size={16} />
 						</button>
 						<button
-							onClick={() => deletePlaylist(playlist.id)}
+							onClick={() => handleDeletePlaylist(playlist.id)}
 							className="p-1 text-gray-600 hover:text-red-600"
 						>
 							<Trash2 size={16} />

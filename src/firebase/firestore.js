@@ -1,5 +1,3 @@
-// src/firebase/firestore.js
-
 import { db } from "./config";
 import {
 	collection,
@@ -10,6 +8,7 @@ import {
 	getDocs,
 	updateDoc,
 	arrayUnion,
+	deleteDoc,
 } from "firebase/firestore";
 
 export async function createPlaylist(name) {
@@ -78,6 +77,21 @@ export async function getQuizzesForPlaylist(playlistId) {
 		return quizzes;
 	} catch (e) {
 		console.error("Error getting quizzes for playlist: ", e);
+		throw e;
+	}
+}
+
+export async function deletePlaylist(playlistId) {
+	try {
+		// Delete the playlist document
+		await deleteDoc(doc(db, "playlists", playlistId));
+
+		// Delete the corresponding questionlist document
+		await deleteDoc(doc(db, "questionlists", playlistId));
+
+		console.log("Playlist and its questionlist deleted");
+	} catch (e) {
+		console.error("Error deleting playlist: ", e);
 		throw e;
 	}
 }
