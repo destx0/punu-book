@@ -1,5 +1,5 @@
 import { scrapeQuestionAndOptions } from "./scraper.js";
-import { uploadToFirestore } from "./firebase-utils.js";
+import { addQuizToPlaylist, createPlaylist } from "./firebase/firestore.js";
 
 console.log("Background script loaded");
 
@@ -19,15 +19,34 @@ async function handleIconClick(tab) {
 		} else {
 			console.log("Scraped data:", result.result.parsedContent);
 
+			// Get or create playlist
+			let playlistId;
+			try {
+				// You might want to implement a way for users to select an existing playlist
+				// or create a new one. For now, we'll create a new playlist for each quiz.
+				playlistId = await createPlaylist(
+					"New Playlist " + new Date().toISOString()
+				);
+			} catch (playlistError) {
+				console.error("Error creating playlist:", playlistError);
+				alert("Error creating playlist: " + playlistError.message);
+				return;
+			}
+
 			// Upload to Firestore
 			try {
-				const docId = await uploadToFirestore(
+				const quizId = await addQuizToPlaylist(
+					playlistId,
 					result.result.parsedContent
 				);
-				console.log("Data uploaded to Firestore. Document ID:", docId);
+				console.log("Quiz uploaded to Firestore. Quiz ID:", quizId);
 				alert(
-					"Data scraped and uploaded to Firestore successfully! Document ID: " +
-						docId
+					"Quiz scraped and uploaded to Firestore successfully!\n" +
+						"Playlist ID: " +
+						playlistId +
+						"\n" +
+						"Quiz ID: " +
+						quizId
 				);
 			} catch (uploadError) {
 				console.error("Error uploading to Firestore:", uploadError);
