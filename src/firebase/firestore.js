@@ -8,6 +8,7 @@ import {
 	arrayUnion,
 	arrayRemove,
 	deleteField,
+	addDoc,
 } from "firebase/firestore";
 
 export async function createUserDocument(userId, email) {
@@ -48,7 +49,7 @@ export async function createPlaylist(userId, name) {
 		console.log("Generated playlist ID:", playlistId);
 
 		const updateData = {
-			[`playlists.${playlistId}`]: { name, quizzes: [] },
+			[`playlists.${playlistId}`]: { name, quizIds: [] },
 		};
 		console.log("Update data:", updateData);
 
@@ -63,10 +64,13 @@ export async function createPlaylist(userId, name) {
 
 export async function addQuizToPlaylist(userId, playlistId, quizData) {
 	try {
+		const quizzesRef = collection(db, "quizzes");
+		const quizDocRef = await addDoc(quizzesRef, quizData);
+		const quizId = quizDocRef.id;
+
 		const userRef = doc(db, "users", userId);
-		const quizId = Date.now().toString(); // Simple unique ID generation
 		await updateDoc(userRef, {
-			[`playlists.${playlistId}.quizzes`]: arrayUnion({ id: quizId, ...quizData }),
+			[`playlists.${playlistId}.quizIds`]: arrayUnion(quizId),
 		});
 		console.log("Quiz added to playlist");
 		return quizId;
@@ -118,7 +122,13 @@ export async function getQuizzesForPlaylist(userId, playlistId) {
 	try {
 		const userDoc = await getDoc(doc(db, "users", userId));
 		const playlist = userDoc.data().playlists[playlistId];
-		return playlist ? playlist.quizzes : [];
+		if (!playlist) return [];
+
+		const quizPromises = playlist.quizIds.map(quizId => 
+			getDoc(doc(db, "quizzes", quizId))
+		);
+		const quizDocs = await Promise.all(quizPromises);
+		return quizDocs.map(doc => ({ id: doc.id, ...doc.data() }));
 	} catch (e) {
 		console.error("Error getting quizzes for playlist: ", e);
 		throw e;
