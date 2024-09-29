@@ -31,7 +31,7 @@ export default function PlaylistManager() {
 				console.log("Loading playlists for user:", user.uid);
 				const playlistNames = await getPlaylistNames(user.uid);
 				console.log("Playlists loaded:", playlistNames);
-				setPlaylists(playlistNames);
+				setPlaylists(sortPlaylists(playlistNames));
 			} catch (error) {
 				console.error("Error loading playlists:", error);
 				setError(`Failed to load playlists. Error: ${error.message}`);
@@ -39,6 +39,10 @@ export default function PlaylistManager() {
 		} else {
 			console.log("No user found, cannot load playlists");
 		}
+	};
+
+	const sortPlaylists = (playlists) => {
+		return [...playlists].sort((a, b) => a.name.localeCompare(b.name));
 	};
 
 	const addPlaylist = async () => {
@@ -57,10 +61,10 @@ export default function PlaylistManager() {
 
 				const playlistId = await createPlaylist(user.uid, inputValue);
 				console.log("Playlist added successfully, ID:", playlistId);
-				setPlaylists([
+				setPlaylists(sortPlaylists([
 					...playlists,
 					{ id: playlistId, name: inputValue },
-				]);
+				]));
 				setInputValue("");
 			} catch (error) {
 				console.error("Error adding playlist:", error);
@@ -82,13 +86,13 @@ export default function PlaylistManager() {
 	const saveEdit = async () => {
 		if (inputValue.trim() !== "" && editingId && user && user.uid) {
 			await updatePlaylistName(user.uid, editingId, inputValue);
-			setPlaylists(
+			setPlaylists(sortPlaylists(
 				playlists.map((playlist) =>
 					playlist.id === editingId
 						? { ...playlist, name: inputValue }
 						: playlist
 				)
-			);
+			));
 			setEditingId(null);
 			setInputValue("");
 		}
@@ -98,9 +102,9 @@ export default function PlaylistManager() {
 		try {
 			if (user && user.uid) {
 				await deletePlaylist(user.uid, id);
-				setPlaylists(
+				setPlaylists(sortPlaylists(
 					playlists.filter((playlist) => playlist.id !== id)
-				);
+				));
 				alert("Playlist deleted successfully!");
 			}
 		} catch (error) {
