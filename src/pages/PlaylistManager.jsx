@@ -8,15 +8,19 @@ import {
   deletePlaylist,
 } from "../firebase/firestore";
 import { scrapeQuestionAndOptions } from "../scraper";
+import { getCurrentUser } from "../firebase/auth";
 
 export default function PlaylistManager() {
+  const user = getCurrentUser();
   const [playlists, setPlaylists] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    loadPlaylists();
-  }, []);
+    if (user) {
+      loadPlaylists();
+    }
+  }, [user]);
 
   const loadPlaylists = async () => {
     const playlistNames = await getPlaylistNames();
