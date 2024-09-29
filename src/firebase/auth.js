@@ -1,12 +1,12 @@
 import { auth } from "./config";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword, signOut } from "firebase/auth";
+import { createUserDocument } from "./firestore";
 
 const saveUserToLocalStorage = (user) => {
   localStorage.setItem('user', JSON.stringify({
     uid: user.uid,
     email: user.email,
     displayName: user.displayName,
-    // Add any other user properties you want to save
   }));
 };
 
@@ -20,6 +20,11 @@ export const signUpWithEmailAndPassword = async (email, password) => {
     console.log("Attempting to sign up with email and password...");
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     console.log("Sign-up successful:", userCredential.user);
+    
+    // Create user document in Firestore
+    await createUserDocument(userCredential.user.uid, email);
+    console.log("User document created in Firestore");
+    
     saveUserToLocalStorage(userCredential.user);
     return userCredential.user;
   } catch (error) {

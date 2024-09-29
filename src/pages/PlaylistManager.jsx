@@ -9,14 +9,17 @@ import {
 } from "../firebase/firestore";
 import { scrapeQuestionAndOptions } from "../scraper";
 import { getCurrentUser } from "../firebase/auth";
+import { createUserDocument } from "../firebase/firestore";
 
 export default function PlaylistManager() {
   const user = getCurrentUser();
   const [playlists, setPlaylists] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    console.log("Current user in PlaylistManager:", user);
     if (user) {
       loadPlaylists();
     }
@@ -24,16 +27,40 @@ export default function PlaylistManager() {
 
   const loadPlaylists = async () => {
     if (user && user.uid) {
-      const playlistNames = await getPlaylistNames(user.uid);
-      setPlaylists(playlistNames);
+      try {
+        console.log("Loading playlists for user:", user.uid);
+        const playlistNames = await getPlaylistNames(user.uid);
+        console.log("Playlists loaded:", playlistNames);
+        setPlaylists(playlistNames);
+      } catch (error) {
+        console.error("Error loading playlists:", error);
+        setError(`Failed to load playlists. Error: ${error.message}`);
+      }
+    } else {
+      console.log("No user found, cannot load playlists");
     }
   };
 
   const addPlaylist = async () => {
     if (inputValue.trim() !== "" && user && user.uid) {
-      const playlistId = await createPlaylist(inputValue, user.uid);
-      setPlaylists([...playlists, { id: playlistId, name: inputValue }]);
-      setInputValue("");
+      try {
+        setError(null);
+        console.log("Adding playlist:", inputValue, "for user:", user.uid);
+        
+        // Check if user document exists and create if it doesn't
+        await createUserDocument(user.uid, user.email);
+        
+        const playlistId = await createPlaylist(user.uid, inputValue);
+        console.log("Playlist added successfully, ID:", playlistId);
+        setPlaylists([...playlists, { id: playlistId, name: inputValue }]);
+        setInputValue("");
+      } catch (error) {
+        console.error("Error adding playlist:", error);
+        setError(`Failed to add playlist. Error: ${error.message}`);
+      }
+    } else {
+      console.log("Cannot add playlist: empty input or no user");
+      setError("Please enter a playlist name and ensure you're logged in.");
     }
   };
 
@@ -43,8 +70,8 @@ export default function PlaylistManager() {
   };
 
   const saveEdit = async () => {
-    if (inputValue.trim() !== "" && editingId) {
-      await updatePlaylistName(editingId, inputValue);
+    if (inputValue.trim() !== "" && editingId && user && user.uid) {
+      await updatePlaylistName(user.uid, editingId, inputValue);
       setPlaylists(
         playlists.map((playlist) =>
           playlist.id === editingId
@@ -59,9 +86,11 @@ export default function PlaylistManager() {
 
   const handleDeletePlaylist = async (id) => {
     try {
-      await deletePlaylist(id);
-      setPlaylists(playlists.filter((playlist) => playlist.id !== id));
-      alert("Playlist deleted successfully!");
+      if (user && user.uid) {
+        await deletePlaylist(user.uid, id);
+        setPlaylists(playlists.filter((playlist) => playlist.id !== id));
+        alert("Playlist deleted successfully!");
+      }
     } catch (error) {
       console.error("Error deleting playlist:", error);
       alert("Error deleting playlist: " + error.message);
@@ -82,8 +111,9 @@ export default function PlaylistManager() {
       if (result.result.error) {
         console.error("Error during scraping:", result.result.error);
         alert("Error during scraping: " + result.result.error);
-      } else {
+      } else if (user && user.uid) {
         const quizId = await addQuizToPlaylist(
+          user.uid,
           playlistId,
           result.result.parsedContent
         );
@@ -117,6 +147,7 @@ export default function PlaylistManager() {
               {editingId ? "Save" : "Add Playlist"}
             </button>
           </div>
+          {error && <p className="text-red-500 mb-2">{error}</p>}
           <div>
             {playlists.map((playlist) => (
               <div

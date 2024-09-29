@@ -6,6 +6,7 @@ import {
 	signOutUser,
 	getCurrentUser,
 } from "../firebase/auth";
+import { createUserDocument } from "../firebase/firestore";
 
 export default function Popup() {
 	const [user, setUser] = useState(null);
@@ -34,6 +35,8 @@ export default function Popup() {
 					email,
 					password
 				);
+				// Check if user document exists and create if it doesn't
+				await createUserDocument(authenticatedUser.uid, authenticatedUser.email);
 			}
 			console.log("User authenticated:", authenticatedUser);
 			setUser(authenticatedUser);
