@@ -9,11 +9,13 @@ import {
 	updateDoc,
 	arrayUnion,
 	deleteDoc,
+	query,
+	where,
 } from "firebase/firestore";
 
-export async function createPlaylist(name) {
+export async function createPlaylist(name, userId) {
 	try {
-		const docRef = await addDoc(collection(db, "playlists"), { name });
+		const docRef = await addDoc(collection(db, "playlists"), { name, userId });
 		await setDoc(doc(db, "questionlists", docRef.id), { quizIds: [] });
 		console.log("Playlist created with ID: ", docRef.id);
 		return docRef.id;
@@ -37,9 +39,11 @@ export async function addQuizToPlaylist(playlistId, quizData) {
 	}
 }
 
-export async function getPlaylistNames() {
+export async function getPlaylistNames(userId) {
 	try {
-		const snapshot = await getDocs(collection(db, "playlists"));
+		const playlistsRef = collection(db, "playlists");
+		const q = query(playlistsRef, where("userId", "==", userId));
+		const snapshot = await getDocs(q);
 		return snapshot.docs.map((doc) => ({
 			id: doc.id,
 			name: doc.data().name,

@@ -23,13 +23,15 @@ export default function PlaylistManager() {
   }, [user]);
 
   const loadPlaylists = async () => {
-    const playlistNames = await getPlaylistNames();
-    setPlaylists(playlistNames);
+    if (user && user.uid) {
+      const playlistNames = await getPlaylistNames(user.uid);
+      setPlaylists(playlistNames);
+    }
   };
 
   const addPlaylist = async () => {
-    if (inputValue.trim() !== "") {
-      const playlistId = await createPlaylist(inputValue);
+    if (inputValue.trim() !== "" && user && user.uid) {
+      const playlistId = await createPlaylist(inputValue, user.uid);
       setPlaylists([...playlists, { id: playlistId, name: inputValue }]);
       setInputValue("");
     }
@@ -96,52 +98,58 @@ export default function PlaylistManager() {
 
   return (
     <div>
-      <div className="flex mb-4">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          className="flex-grow px-2 py-1 border rounded-l"
-          placeholder={
-            editingId ? "Edit playlist name" : "Enter playlist name"
-          }
-        />
-        <button
-          onClick={editingId ? saveEdit : addPlaylist}
-          className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600"
-        >
-          {editingId ? "Save" : "Add Playlist"}
-        </button>
-      </div>
-      <div>
-        {playlists.map((playlist) => (
-          <div
-            key={playlist.id}
-            className="flex items-center mb-2 bg-white rounded shadow p-2"
-          >
-            <span className="flex-grow">{playlist.name}</span>
+      {user ? (
+        <>
+          <div className="flex mb-4">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="flex-grow px-2 py-1 border rounded-l"
+              placeholder={
+                editingId ? "Edit playlist name" : "Enter playlist name"
+              }
+            />
             <button
-              onClick={() => addScrapedDataToPlaylist(playlist.id)}
-              className="p-1 mr-1 text-gray-600 hover:text-blue-600"
-              title="Add scraped data to playlist"
+              onClick={editingId ? saveEdit : addPlaylist}
+              className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600"
             >
-              <PlusCircle size={16} />
-            </button>
-            <button
-              onClick={() => startEditing(playlist.id, playlist.name)}
-              className="p-1 mr-1 text-gray-600 hover:text-green-600"
-            >
-              <Edit2 size={16} />
-            </button>
-            <button
-              onClick={() => handleDeletePlaylist(playlist.id)}
-              className="p-1 text-gray-600 hover:text-red-600"
-            >
-              <Trash2 size={16} />
+              {editingId ? "Save" : "Add Playlist"}
             </button>
           </div>
-        ))}
-      </div>
+          <div>
+            {playlists.map((playlist) => (
+              <div
+                key={playlist.id}
+                className="flex items-center mb-2 bg-white rounded shadow p-2"
+              >
+                <span className="flex-grow">{playlist.name}</span>
+                <button
+                  onClick={() => addScrapedDataToPlaylist(playlist.id)}
+                  className="p-1 mr-1 text-gray-600 hover:text-blue-600"
+                  title="Add scraped data to playlist"
+                >
+                  <PlusCircle size={16} />
+                </button>
+                <button
+                  onClick={() => startEditing(playlist.id, playlist.name)}
+                  className="p-1 mr-1 text-gray-600 hover:text-green-600"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button
+                  onClick={() => handleDeletePlaylist(playlist.id)}
+                  className="p-1 text-gray-600 hover:text-red-600"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p>Please log in to manage playlists.</p>
+      )}
     </div>
   );
 }
